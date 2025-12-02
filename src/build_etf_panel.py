@@ -20,9 +20,14 @@ def main() -> None:
         if not path.exists():
             raise SystemExit(f"Missing required input: {path}")
 
-    flows = pd.read_csv(flows_path, parse_dates=["date"])
-    prices = pd.read_csv(prices_path, parse_dates=["date"])
-    nav = pd.read_csv(nav_path, parse_dates=["date"]) if nav_path.exists() else pd.DataFrame()
+    def _normalize_dates(df: pd.DataFrame) -> pd.DataFrame:
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"], utc=True, errors="coerce").dt.tz_localize(None)
+        return df
+
+    flows = _normalize_dates(pd.read_csv(flows_path))
+    prices = _normalize_dates(pd.read_csv(prices_path))
+    nav = _normalize_dates(pd.read_csv(nav_path)) if nav_path.exists() else pd.DataFrame()
 
     panel = flows.merge(prices, on=["date", "ticker"], how="left")
     if not nav.empty:

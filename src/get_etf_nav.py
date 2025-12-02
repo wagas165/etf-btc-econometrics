@@ -55,7 +55,8 @@ def main() -> None:
             print(f"Skipping {ticker} NAV ({path}): {exc}")
 
     if not frames:
-        raise SystemExit("No NAV files found. Place issuer CSVs under data/raw/etf_nav")
+        print("No NAV files found. Place issuer CSVs under data/raw/etf_nav if available.")
+        return
 
     nav_panel = pd.concat(frames, ignore_index=True)
     nav_panel.to_csv(out_path, index=False)
