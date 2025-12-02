@@ -6,6 +6,7 @@ with columns ``date``, ``ticker``, ``close_price``, and ``volume_shares``.
 
 from __future__ import annotations
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 import pandas as pd
 import yfinance as yf
 

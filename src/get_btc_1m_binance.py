@@ -11,6 +11,7 @@ from pathlib import Path
 from time import sleep
 from typing import Iterable
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 import pandas as pd
 import requests
 

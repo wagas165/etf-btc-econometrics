@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 from pathlib import Path
 
 import numpy as np

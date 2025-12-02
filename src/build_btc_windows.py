@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import time
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 import numpy as np
 import pandas as pd
 import pytz
