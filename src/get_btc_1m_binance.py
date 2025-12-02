@@ -96,17 +96,31 @@ def _download_monthly_archive(session: requests.Session, year: int, month: int) 
 def download_from_archives(start: datetime, end: datetime, out_path: Path) -> bool:
     session = _session_with_retries()
     frames: list[pd.DataFrame] = []
+    expected_months = list(month_range(start, end))
+    downloaded_months: set[tuple[int, int]] = set()
 
-    for year, month in month_range(start, end):
+    for year, month in expected_months:
         try:
             df_month = _download_monthly_archive(session, year, month)
             frames.append(df_month)
+            downloaded_months.add((year, month))
             print(f"Downloaded {year}-{month:02d} archive with {len(df_month):,} rows")
         except requests.HTTPError as exc:
             print(f"Archive missing for {year}-{month:02d} ({exc}); continuing")
             continue
 
     if not frames:
+        return False
+
+    missing_months = [
+        f"{year}-{month:02d}" for year, month in expected_months if (year, month) not in downloaded_months
+    ]
+    if missing_months:
+        print(
+            "Archive downloads incomplete; missing months: "
+            + ", ".join(missing_months)
+            + ". Falling back to secondary sources."
+        )
         return False
 
     df = pd.concat(frames, ignore_index=True)
