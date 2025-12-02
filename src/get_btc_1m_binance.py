@@ -67,24 +67,42 @@ def main() -> None:
     rows = []
     session = _session_with_retries()
     for idx, (chunk_start, chunk_end) in enumerate(daterange(start, end, step), start=1):
-        data = fetch_klines(session, int(chunk_start.timestamp() * 1000), int(chunk_end.timestamp() * 1000))
-        for k in data:
-            open_time = datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc)
-            open_, high, low, close = map(float, k[1:5])
-            volume = float(k[5])
-            rows.append(
-                {
-                    "timestamp_utc": open_time,
-                    "open": open_,
-                    "high": high,
-                    "low": low,
-                    "close": close,
-                    "volume": volume,
-                    "symbol": BINANCE_SYMBOL,
-                }
+        cur_start = chunk_start
+        chunk_rows = 0
+        while cur_start < chunk_end:
+            data = fetch_klines(
+                session,
+                int(cur_start.timestamp() * 1000),
+                int(chunk_end.timestamp() * 1000),
             )
-        print(f"Chunk {idx}: {chunk_start.date()} to {chunk_end.date()} -> {len(data)} rows")
-        sleep(0.25)  # polite pause
+
+            if not data:
+                break
+
+            for k in data:
+                open_time = datetime.fromtimestamp(k[0] / 1000, tz=timezone.utc)
+                open_, high, low, close = map(float, k[1:5])
+                volume = float(k[5])
+                rows.append(
+                    {
+                        "timestamp_utc": open_time,
+                        "open": open_,
+                        "high": high,
+                        "low": low,
+                        "close": close,
+                        "volume": volume,
+                        "symbol": BINANCE_SYMBOL,
+                    }
+                )
+
+            chunk_rows += len(data)
+            last_open_time = datetime.fromtimestamp(data[-1][0] / 1000, tz=timezone.utc)
+            cur_start = last_open_time + timedelta(minutes=1)
+            sleep(0.25)  # polite pause between API calls
+
+        print(
+            f"Chunk {idx}: {chunk_start.date()} to {chunk_end.date()} -> {chunk_rows} rows"
+        )
 
     df = pd.DataFrame(rows).drop_duplicates(subset=["timestamp_utc"]).sort_values("timestamp_utc")
     df.to_csv(out_path, index=False)

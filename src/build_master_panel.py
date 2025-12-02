@@ -22,7 +22,14 @@ def main() -> None:
     btc = pd.read_csv(btc_path, parse_dates=["date"])
     macro = pd.read_csv(macro_path, parse_dates=["date"])
 
-    daily_funds = flows.merge(etf_panel, on=["date", "ticker"], how="left")
+    # ``etf_panel`` can already include ``net_flow_usd`` from prior steps; keep the
+    # version from ``flows`` so downstream aggregations can reference the column
+    # directly without suffixes.
+    daily_funds = flows.merge(
+        etf_panel.drop(columns=["net_flow_usd"], errors="ignore"),
+        on=["date", "ticker"],
+        how="left",
+    )
 
     agg = (
         daily_funds.groupby("date").agg(
