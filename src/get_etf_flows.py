@@ -68,7 +68,11 @@ def _session_with_retries() -> requests.Session:
 
 
 def _parse_farside_table(html: str) -> pd.DataFrame:
-    tables = pd.read_html(io.StringIO(html))
+    try:
+        tables = pd.read_html(io.StringIO(html))
+    except ValueError:
+        tables = []
+
     for table in tables:
         if table.shape[0] > 1 and table.shape[1] > 1:
             return table
