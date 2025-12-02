@@ -3,6 +3,7 @@
 Update these values to reflect the time range and funds you want to pull.
 """
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -31,6 +32,10 @@ US_BTC_ETFS = [
 # Binance download settings
 BINANCE_SYMBOL = "BTCUSDT"
 BINANCE_INTERVAL = "1m"
+BINANCE_BASE_URL = os.getenv("BINANCE_BASE_URL", "https://api.binance.com/api/v3/klines")
+BINANCE_FALLBACK_BASE_URL = os.getenv(
+    "BINANCE_FALLBACK_BASE_URL", "https://data-api.binance.vision/api/v3/klines"
+)
 
 # US equity regular trading session (Eastern Time)
 US_EQUITY_OPEN_ET = "09:30"

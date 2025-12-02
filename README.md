@@ -25,3 +25,14 @@ Run the scripts in this order after placing issuer NAV CSVs under `data/raw/etf_
 8. `python src/build_master_panel.py`
 
 Outputs are written under `data/clean/` and are ready for analysis/notebooks.
+
+## Troubleshooting downloads
+
+* **Farside ETF flows returning 403**: the scraper now caches the page HTML to
+  `data/raw/etf_flows/farside_flows_raw.html`. If the live request is blocked,
+  save the page manually in your browser and re-run the script, or point the
+  `FARSIDE_HTML_FALLBACK` environment variable to your saved HTML copy.
+* **Binance klines blocked in your region**: set `BINANCE_BASE_URL` or
+  `BINANCE_FALLBACK_BASE_URL` to an accessible mirror (for example,
+  `https://data-api.binance.vision/api/v3/klines`). The downloader will try the
+  primary endpoint first and automatically fall back if it fails.

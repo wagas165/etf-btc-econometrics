@@ -39,6 +39,7 @@ from config.config import (
 )
 
 FARSIDE_URL = "https://farside.co.uk/bitcoin-etf-flow-all-data/"
+FARSIDE_HTML_CACHE = RAW_DIR / "etf_flows" / "farside_flows_raw.html"
 SOSOVALUE_FALLBACK = RAW_DIR / "etf_flows" / "sosovalue_flows_raw.json"
 
 
@@ -63,11 +64,36 @@ def _session_with_retries() -> requests.Session:
 
 
 def fetch_farside_flows() -> FlowSource:
-    """Fetch Farside flow table and return as a wide DataFrame."""
+    """Fetch Farside flow table and return as a wide DataFrame.
+
+    If the live request fails (e.g., HTTP 403), the function looks for a cached
+    HTML copy of the page. You can point ``FARSIDE_HTML_FALLBACK`` to a manually
+    saved HTML file if the default cache location is unavailable.
+    """
+
     session = _session_with_retries()
-    response = session.get(FARSIDE_URL, timeout=HTTP_TIMEOUT)
-    response.raise_for_status()
-    tables = pd.read_html(response.text)
+    html: Optional[str] = None
+    cache_path = Path(os.getenv("FARSIDE_HTML_FALLBACK", FARSIDE_HTML_CACHE))
+    try:
+        response = session.get(FARSIDE_URL, timeout=HTTP_TIMEOUT)
+        response.raise_for_status()
+        html = response.text
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text(html, encoding="utf-8")
+    except requests.RequestException as exc:
+        if cache_path.exists():
+            print(
+                f"Farside download failed ({exc}). Using cached HTML from {cache_path}."
+            )
+            html = cache_path.read_text(encoding="utf-8")
+        else:
+            raise RuntimeError(
+                "Could not download Farside flows and no cached HTML found. "
+                f"Save the page HTML to {cache_path} (or set FARSIDE_HTML_FALLBACK) "
+                "and re-run the script."
+            ) from exc
+
+    tables = pd.read_html(html)
     if not tables:
         raise ValueError("No tables found on Farside page")
 
