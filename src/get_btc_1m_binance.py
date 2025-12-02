@@ -1,7 +1,10 @@
 """Download BTCUSDT 1m klines from Binance REST API.
 
 The script saves raw candles to ``data/raw/btc_1m/btc_1m_raw.csv``.
-API limits require chunked requests; adjust the step size if needed.
+API limits require chunked requests; adjust the step size if needed. If the
+primary endpoint is blocked in your region, set ``BINANCE_BASE_URL`` or
+``BINANCE_FALLBACK_BASE_URL`` to an accessible mirror and the downloader will
+fail over automatically.
 """
 
 from __future__ import annotations
@@ -16,6 +19,8 @@ import pandas as pd
 import requests
 
 from config.config import (
+    BINANCE_BASE_URL,
+    BINANCE_FALLBACK_BASE_URL,
     BINANCE_INTERVAL,
     BINANCE_SYMBOL,
     ETF_END_DATE,
@@ -24,8 +29,6 @@ from config.config import (
     HTTP_TIMEOUT,
     RAW_DIR,
 )
-
-BASE_URL = "https://api.binance.com/api/v3/klines"
 
 
 def _session_with_retries() -> requests.Session:
@@ -36,7 +39,13 @@ def _session_with_retries() -> requests.Session:
     return session
 
 
-def fetch_klines(session: requests.Session, start_ts_ms: int, end_ts_ms: int, limit: int = 1000):
+def fetch_klines(
+    session: requests.Session,
+    base_url: str,
+    start_ts_ms: int,
+    end_ts_ms: int,
+    limit: int = 1000,
+):
     params = {
         "symbol": BINANCE_SYMBOL,
         "interval": BINANCE_INTERVAL,
@@ -44,7 +53,7 @@ def fetch_klines(session: requests.Session, start_ts_ms: int, end_ts_ms: int, li
         "endTime": end_ts_ms,
         "limit": limit,
     }
-    response = session.get(BASE_URL, params=params, timeout=HTTP_TIMEOUT)
+    response = session.get(base_url, params=params, timeout=HTTP_TIMEOUT)
     response.raise_for_status()
     return response.json()
 
@@ -71,11 +80,31 @@ def main() -> None:
         cur_start = chunk_start
         chunk_rows = 0
         while cur_start < chunk_end:
-            data = fetch_klines(
-                session,
-                int(cur_start.timestamp() * 1000),
-                int(chunk_end.timestamp() * 1000),
-            )
+            errors: list[str] = []
+            data = None
+            for base_url in [BINANCE_BASE_URL, BINANCE_FALLBACK_BASE_URL]:
+                if not base_url:
+                    continue
+                try:
+                    data = fetch_klines(
+                        session,
+                        base_url,
+                        int(cur_start.timestamp() * 1000),
+                        int(chunk_end.timestamp() * 1000),
+                    )
+                    break
+                except requests.HTTPError as exc:
+                    errors.append(f"{base_url}: {exc}")
+                    print(
+                        f"Binance request failed for {base_url} ({exc}); "
+                        "checking fallback endpoint."
+                    )
+
+            if data is None:
+                raise RuntimeError(
+                    "All Binance endpoints failed. Set BINANCE_BASE_URL or "
+                    "BINANCE_FALLBACK_BASE_URL to a reachable mirror.\n" + "\n".join(errors)
+                )
 
             if not data:
                 break
