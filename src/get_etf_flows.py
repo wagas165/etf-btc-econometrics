@@ -24,6 +24,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Optional
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 import pandas as pd
 import requests
 
@@ -52,6 +53,12 @@ def _session_with_retries() -> requests.Session:
     adapter = requests.adapters.HTTPAdapter(max_retries=HTTP_MAX_RETRIES)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
+    session.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0 (compatible; etf-btc-econometrics/1.0)",
+            "Accept": "text/html,application/json;q=0.9,*/*;q=0.8",
+        }
+    )
     return session
 
 

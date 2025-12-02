@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import _project_paths  # noqa: F401  # adds repo root to sys.path
 import pandas as pd
 
 from config.config import CLEAN_DIR
