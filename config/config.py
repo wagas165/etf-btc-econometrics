@@ -36,6 +36,9 @@ BINANCE_BASE_URL = os.getenv("BINANCE_BASE_URL", "https://api.binance.com/api/v3
 BINANCE_FALLBACK_BASE_URL = os.getenv(
     "BINANCE_FALLBACK_BASE_URL", "https://data-api.binance.vision/api/v3/klines"
 )
+CDD_1M_URL = os.getenv(
+    "CDD_1M_URL", "https://www.cryptodatadownload.com/cdd/Binance_BTCUSDT_minute.csv"
+)
 
 # US equity regular trading session (Eastern Time)
 US_EQUITY_OPEN_ET = "09:30"
