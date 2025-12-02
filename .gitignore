@@ -2,11 +2,5 @@ __pycache__/
 *.pyc
 .data-cache/
 
-# Data artifacts
-/data/raw/*
-/data/clean/*
-!/data/raw/**/.gitkeep
-!/data/clean/.gitkeep
-
 # Notebooks outputs
 *.ipynb_checkpoints/
