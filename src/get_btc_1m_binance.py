@@ -165,6 +165,18 @@ def main() -> None:
     start = ETF_START_DATE.replace(tzinfo=timezone.utc)
     end = ETF_END_DATE.replace(tzinfo=timezone.utc)
 
+    # Binance publishes full-month archives; avoid requesting future months that
+    # do not exist yet by clipping the end date to the last completed month.
+    now_utc = datetime.now(timezone.utc)
+    last_full_month_start = datetime(now_utc.year, now_utc.month, 1, tzinfo=timezone.utc)
+    last_full_month_end = last_full_month_start - timedelta(microseconds=1)
+    if end > last_full_month_end:
+        print(
+            "ETF_END_DATE extends beyond available Binance archives; "
+            "clipping to last complete month."
+        )
+        end = last_full_month_end
+
     if download_from_archives(start, end, out_path):
         return
 
