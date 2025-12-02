@@ -15,6 +15,12 @@ Lightweight pipeline to download Bitcoin ETF flows, prices, NAVs, BTC intraday d
 ## Pipeline steps
 Run the scripts in this order after placing issuer NAV CSVs under `data/raw/etf_nav/`:
 
+```bash
+./run_pipeline.sh
+```
+
+Or run each step manually:
+
 1. `python src/get_etf_flows.py`
 2. `python src/get_etf_prices.py`
 3. `python src/get_etf_nav.py`
