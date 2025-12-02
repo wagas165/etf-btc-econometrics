@@ -20,6 +20,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -68,23 +69,55 @@ def _session_with_retries() -> requests.Session:
 
 
 def _parse_farside_table(html: str) -> pd.DataFrame:
+    """Parse the Farside ETF flow table from HTML/markdown content.
+
+    Farside now serves a Cloudflare-protected page that is easiest to access
+    via a proxy such as https://r.jina.ai/. The proxy returns plain text where
+    the table cells are listed line-by-line rather than as a traditional HTML
+    table. We attempt ``pandas.read_html`` first (in case a real table is
+    present); if that fails, we reconstruct the grid by detecting the header
+    block and grouping the remaining values into rows.
+    """
+
     try:
         tables = pd.read_html(io.StringIO(html))
-    except ValueError:
+    except (ValueError, ImportError):
+        tables = []
+    except Exception:
         tables = []
 
     for table in tables:
         if table.shape[0] > 1 and table.shape[1] > 1:
             return table
 
-    markdown_lines = [ln.strip() for ln in html.splitlines() if ln.strip().startswith("|")]
-    if not markdown_lines:
+    # Proxy text fallback: locate the header immediately after the section
+    # title and then bucket the remaining values into equally sized rows.
+    lines = [ln.strip() for ln in html.splitlines()]
+    try:
+        start_idx = next(i for i, ln in enumerate(lines) if "Bitcoin ETF Flow" in ln)
+    except StopIteration:
+        raise ValueError("No tables found on Farside page") from None
+
+    meaningful = [ln for ln in lines[start_idx + 1 :] if ln]
+    date_pattern = re.compile(r"\d{1,2} \w{3} \d{4}")
+
+    try:
+        header_end = next(i for i, ln in enumerate(meaningful) if date_pattern.fullmatch(ln))
+    except StopIteration:
+        raise ValueError("No tables found on Farside page") from None
+
+    headers = meaningful[:header_end]
+    cells: list[str] = []
+    for cell in meaningful[header_end:]:
+        if cell.lower().startswith("other funds") or cell.lower().startswith("notes"):
+            break
+        cells.append(cell)
+
+    if not headers or len(cells) < len(headers):
         raise ValueError("No tables found on Farside page")
 
-    markdown = "\n".join(markdown_lines)
-    df = pd.read_csv(io.StringIO(markdown), sep="|", engine="python")
-    df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
-    df = df.dropna(axis=1, how="all")
+    rows = [cells[i : i + len(headers)] for i in range(0, len(cells), len(headers))]
+    df = pd.DataFrame(rows, columns=headers)
     return df
 
 

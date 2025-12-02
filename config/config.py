@@ -29,12 +29,12 @@ US_BTC_ETFS = [
     "GBTC",
 ]
 
-# Binance download settings
+# BTC minute data download settings
 BINANCE_SYMBOL = "BTCUSDT"
 BINANCE_INTERVAL = "1m"
-BINANCE_BASE_URL = os.getenv("BINANCE_BASE_URL", "https://api.binance.com/api/v3/klines")
-BINANCE_FALLBACK_BASE_URL = os.getenv(
-    "BINANCE_FALLBACK_BASE_URL", "https://data-api.binance.vision/api/v3/klines"
+BINANCE_DATA_BASE_URL = os.getenv(
+    "BINANCE_DATA_BASE_URL",
+    "https://data.binance.vision/data/spot/monthly/klines",
 )
 CDD_1M_URL = os.getenv(
     "CDD_1M_URL", "https://www.cryptodatadownload.com/cdd/Binance_BTCUSDT_minute.csv"
