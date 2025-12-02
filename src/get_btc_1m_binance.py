@@ -1,10 +1,9 @@
-"""Download BTCUSDT 1m klines from Binance REST API.
+"""Download BTCUSDT 1m klines from Binance REST API or CryptoDataDownload.
 
-The script saves raw candles to ``data/raw/btc_1m/btc_1m_raw.csv``.
-API limits require chunked requests; adjust the step size if needed. If the
-primary endpoint is blocked in your region, set ``BINANCE_BASE_URL`` or
-``BINANCE_FALLBACK_BASE_URL`` to an accessible mirror and the downloader will
-fail over automatically.
+The script saves raw candles to ``data/raw/btc_1m/btc_1m_raw.csv``. It first
+attempts a bulk download from CryptoDataDownload (CDD), which hosts a
+full-history CSV without API limits or regional blocks. If that fails, it falls
+back to chunked REST requests against Binance (with an optional mirror URL).
 """
 
 from __future__ import annotations
@@ -23,6 +22,7 @@ from config.config import (
     BINANCE_FALLBACK_BASE_URL,
     BINANCE_INTERVAL,
     BINANCE_SYMBOL,
+    CDD_1M_URL,
     ETF_END_DATE,
     ETF_START_DATE,
     HTTP_MAX_RETRIES,
@@ -66,14 +66,43 @@ def daterange(start: datetime, end: datetime, step: timedelta) -> Iterable[tuple
         cur = chunk_end
 
 
-def main() -> None:
-    out_path = RAW_DIR / "btc_1m" / "btc_1m_raw.csv"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+def download_from_cdd(start: datetime, end: datetime, out_path: Path) -> bool:
+    if not CDD_1M_URL:
+        return False
 
-    start = ETF_START_DATE.replace(tzinfo=timezone.utc)
-    end = ETF_END_DATE.replace(tzinfo=timezone.utc)
+    try:
+        df = pd.read_csv(CDD_1M_URL, skiprows=1)
+    except Exception as exc:  # noqa: BLE001 - want to log and fallback
+        print(f"CDD download failed ({exc}); falling back to Binance API.")
+        return False
+
+    if df.empty:
+        print("CDD download returned no rows; falling back to Binance API.")
+        return False
+
+    df["timestamp_utc"] = pd.to_datetime(df["date"], utc=True)
+    df = df[(df["timestamp_utc"] >= start) & (df["timestamp_utc"] <= end)]
+    if df.empty:
+        print(
+            "CDD download did not contain the requested date window; "
+            "falling back to Binance API."
+        )
+        return False
+
+    df = df.sort_values("timestamp_utc").reset_index(drop=True)
+    df = df.rename(columns={"Volume BTC": "volume"})
+    df["symbol"] = BINANCE_SYMBOL
+    df = df[["timestamp_utc", "open", "high", "low", "close", "volume", "symbol"]]
+    df.to_csv(out_path, index=False)
+    print(
+        "Saved "
+        f"{len(df):,} rows to {out_path} using CryptoDataDownload (descending order fixed)."
+    )
+    return True
+
+
+def download_from_binance(start: datetime, end: datetime, out_path: Path) -> None:
     step = timedelta(days=3)
-
     rows = []
     session = _session_with_retries()
     for idx, (chunk_start, chunk_end) in enumerate(daterange(start, end, step), start=1):
@@ -137,6 +166,19 @@ def main() -> None:
     df = pd.DataFrame(rows).drop_duplicates(subset=["timestamp_utc"]).sort_values("timestamp_utc")
     df.to_csv(out_path, index=False)
     print(f"Saved {len(df):,} rows to {out_path}")
+
+
+def main() -> None:
+    out_path = RAW_DIR / "btc_1m" / "btc_1m_raw.csv"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    start = ETF_START_DATE.replace(tzinfo=timezone.utc)
+    end = ETF_END_DATE.replace(tzinfo=timezone.utc)
+
+    if download_from_cdd(start, end, out_path):
+        return
+
+    download_from_binance(start, end, out_path)
 
 
 if __name__ == "__main__":
