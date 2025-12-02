@@ -162,13 +162,31 @@ def main() -> None:
     out_path = RAW_DIR / "btc_1m" / "btc_1m_raw.csv"
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    start = ETF_START_DATE.replace(tzinfo=timezone.utc)
-    end = ETF_END_DATE.replace(tzinfo=timezone.utc)
+    requested_start = ETF_START_DATE.replace(tzinfo=timezone.utc)
+    requested_end = ETF_END_DATE.replace(tzinfo=timezone.utc)
 
-    if download_from_archives(start, end, out_path):
+    # Binance publishes full-month archives; avoid requesting future months that
+    # do not exist yet by clipping the end date to the last completed month.
+    now_utc = datetime.now(timezone.utc)
+    last_full_month_start = datetime(now_utc.year, now_utc.month, 1, tzinfo=timezone.utc)
+    last_full_month_end = last_full_month_start - timedelta(microseconds=1)
+    archive_end = min(requested_end, last_full_month_end)
+
+    if archive_end < requested_start:
+        print(
+            "ETF_START_DATE falls in the current partial month; skipping archive downloads "
+            "and relying on available CDD data instead."
+        )
+    elif requested_end > last_full_month_end:
+        print(
+            "ETF_END_DATE extends beyond available Binance archives; "
+            "clipping to last complete month."
+        )
+    
+    if archive_end >= requested_start and download_from_archives(requested_start, archive_end, out_path):
         return
 
-    if download_from_cdd(start, end, out_path):
+    if download_from_cdd(requested_start, requested_end, out_path):
         return
 
     raise SystemExit(
