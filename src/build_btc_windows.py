@@ -36,7 +36,10 @@ def main() -> None:
     if df.empty:
         raise SystemExit("No BTC candles found; run src/get_btc_1m_binance.py first")
 
-    df["timestamp_et"] = df["timestamp_utc"].dt.tz_localize("UTC").dt.tz_convert(ET)
+    timestamps = df["timestamp_utc"]
+    if timestamps.dt.tz is None:
+        timestamps = timestamps.dt.tz_localize("UTC")
+    df["timestamp_et"] = timestamps.dt.tz_convert(ET)
     df["date_et"] = df["timestamp_et"].dt.date
     df["time_et"] = df["timestamp_et"].dt.time
 
@@ -80,6 +83,7 @@ def main() -> None:
         .reset_index()
         .rename(columns={"date_et": "date"})
     )
+    rv_intraday["date"] = pd.to_datetime(rv_intraday["date"])
 
     overnight_mask = ~intraday_mask
     rv_overnight = (
@@ -91,6 +95,7 @@ def main() -> None:
         .reset_index()
         .rename(columns={"date_et": "date"})
     )
+    rv_overnight["date"] = pd.to_datetime(rv_overnight["date"])
 
     daily = (
         daily.merge(rv_intraday, on="date", how="left")

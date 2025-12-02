@@ -119,9 +119,8 @@ def download_from_archives(start: datetime, end: datetime, out_path: Path) -> bo
         print(
             "Archive downloads incomplete; missing months: "
             + ", ".join(missing_months)
-            + ". Falling back to secondary sources."
+            + ". Saving partial dataset from available archives."
         )
-        return False
 
     df = pd.concat(frames, ignore_index=True)
     df = df[(df["timestamp_utc"] >= start) & (df["timestamp_utc"] <= end)]
