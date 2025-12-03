@@ -32,6 +32,23 @@ Or run each step manually:
 
 Outputs are written under `data/clean/` and are ready for analysis/notebooks.
 
+## Analysis phases
+
+Once `data/clean/master_panel.csv` exists, you can run the econometric analysis suite:
+
+```bash
+python run_analysis_phases.py
+```
+
+Each phase can also be run individually as a module-level CLI (ensure `PYTHONPATH` includes `src/`):
+
+- `python -m analysis.eda`
+- `python -m analysis.baseline_models`
+- `python -m analysis.iv_models`
+- `python -m analysis.robustness`
+
+Results are written to `outputs/` with descriptive filenames such as `eda_summary_stats.csv`, `baseline_irf_closeclose.csv`, and `robustness_static_ols.csv`.
+
 ## Troubleshooting downloads
 
 * **Farside ETF flows returning 403**: the scraper now caches the page HTML to
