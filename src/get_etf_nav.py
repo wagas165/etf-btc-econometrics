@@ -31,7 +31,8 @@ def load_single_nav_file(path: Path, ticker: str) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"])
     df["ticker"] = ticker
-    return df[["date", "ticker", "nav_per_share"]]
+    df["nav_source"] = "issuer"
+    return df[["date", "ticker", "nav_per_share", "nav_source"]]
 
 
 def iter_nav_files(tickers: Iterable[str]):
@@ -59,7 +60,8 @@ def fetch_nav_from_yfinance(ticker: str) -> pd.DataFrame:
 
     hist = hist.reset_index().rename(columns={"Date": "date", "Close": "nav_per_share"})
     hist["ticker"] = ticker
-    return hist[["date", "ticker", "nav_per_share"]]
+    hist["nav_source"] = "yfinance_proxy"
+    return hist[["date", "ticker", "nav_per_share", "nav_source"]]
 
 
 def main() -> None:

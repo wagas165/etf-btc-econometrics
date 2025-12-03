@@ -34,15 +34,19 @@ def main() -> None:
 
     agg = (
         daily_funds.groupby("date").agg(
-            flow_agg_usd=("net_flow_usd", "sum"),
+            flow_agg_usd_mn=("net_flow_usd", "sum"),
             aum_total=("aum_usd", "sum") if "aum_usd" in daily_funds.columns else ("net_flow_usd", "sum"),
             dollar_volume_total=("dollar_volume", "sum"),
         )
     ).reset_index()
 
+    # Flows are reported in millions of USD; scale to raw dollars for ratios
+    agg["flow_agg_usd"] = agg["flow_agg_usd_mn"] * 1_000_000
+
     agg["aum_total_lag"] = agg["aum_total"].shift(1)
-    agg["FlowShock"] = agg["flow_agg_usd"] / agg["aum_total_lag"]
-    agg["Turnover"] = agg["dollar_volume_total"] / agg["aum_total_lag"]
+    valid_denom = agg["aum_total_lag"].where(agg["aum_total_lag"] > 0)
+    agg["FlowShock"] = agg["flow_agg_usd"] / valid_denom
+    agg["Turnover"] = agg["dollar_volume_total"] / valid_denom
 
     if "premium" in daily_funds.columns and "aum_usd" in daily_funds.columns:
         prem = (
