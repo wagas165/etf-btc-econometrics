@@ -22,7 +22,11 @@ def main() -> None:
 
     def _normalize_dates(df: pd.DataFrame) -> pd.DataFrame:
         if "date" in df.columns:
-            df["date"] = pd.to_datetime(df["date"], utc=True, errors="coerce").dt.tz_localize(None)
+            df["date"] = (
+                pd.to_datetime(df["date"], utc=True, errors="coerce")
+                .dt.tz_localize(None)
+                .dt.normalize()
+            )
         return df
 
     flows = _normalize_dates(pd.read_csv(flows_path))
@@ -41,6 +45,9 @@ def main() -> None:
 
     if "nav_per_share" in panel.columns and "shares_outstanding" in panel.columns:
         panel["aum_usd_check"] = panel["nav_per_share"] * panel["shares_outstanding"]
+
+    if "aum_usd" not in panel.columns and {"close_price", "shares_outstanding"}.issubset(panel.columns):
+        panel["aum_usd"] = panel["close_price"] * panel["shares_outstanding"]
 
     out_path = CLEAN_DIR / "etf_panel.csv"
     out_path.parent.mkdir(parents=True, exist_ok=True)

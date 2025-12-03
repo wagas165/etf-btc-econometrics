@@ -19,6 +19,11 @@ def fetch_etf_price(ticker: str) -> pd.DataFrame:
     if hist.empty:
         raise ValueError(f"No price data returned for {ticker}")
 
+    shares_outstanding = yf_ticker.fast_info.get("shares")
+    if not shares_outstanding:
+        # ``get_info`` is slower but sometimes contains the shares field for new ETFs
+        info = yf_ticker.get_info()
+        shares_outstanding = info.get("sharesOutstanding") or info.get("impliedSharesOutstanding")
     hist = hist.reset_index().rename(
         columns={
             "Date": "date",
@@ -27,7 +32,9 @@ def fetch_etf_price(ticker: str) -> pd.DataFrame:
         }
     )
     hist["ticker"] = ticker
-    return hist[["date", "ticker", "close_price", "volume_shares"]]
+    hist["shares_outstanding"] = shares_outstanding
+    hist["aum_usd"] = hist["close_price"] * shares_outstanding if shares_outstanding else pd.NA
+    return hist[["date", "ticker", "close_price", "volume_shares", "shares_outstanding", "aum_usd"]]
 
 
 def main() -> None:
