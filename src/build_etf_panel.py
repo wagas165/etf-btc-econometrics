@@ -41,7 +41,10 @@ def main() -> None:
         panel["dollar_volume"] = panel["close_price"] * panel["volume_shares"]
 
     if "nav_per_share" in panel.columns and "close_price" in panel.columns:
-        panel["premium"] = (panel["close_price"] - panel["nav_per_share"]) / panel["nav_per_share"]
+        issuer_mask = panel.get("nav_source") == "issuer" if "nav_source" in panel.columns else True
+        panel.loc[issuer_mask, "premium"] = (
+            panel.loc[issuer_mask, "close_price"] - panel.loc[issuer_mask, "nav_per_share"]
+        ) / panel.loc[issuer_mask, "nav_per_share"]
 
     if "nav_per_share" in panel.columns and "shares_outstanding" in panel.columns:
         panel["aum_usd_check"] = panel["nav_per_share"] * panel["shares_outstanding"]
