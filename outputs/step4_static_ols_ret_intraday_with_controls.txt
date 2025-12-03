@@ -1,0 +1,32 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.003
+Model:                            OLS   Adj. R-squared:                 -0.029
+Method:                 Least Squares   F-statistic:                    0.2026
+Date:                Wed, 03 Dec 2025   Prob (F-statistic):              0.976
+Time:                        07:04:18   Log-Likelihood:                 528.27
+No. Observations:                 196   AIC:                            -1043.
+Df Residuals:                     189   BIC:                            -1020.
+Df Model:                           6                                         
+Covariance Type:                  HAC                                         
+===================================================================================
+                      coef    std err          z      P>|z|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+const           -6.199e-05      0.002     -0.030      0.976      -0.004       0.004
+FlowShock_frac     -0.0114      0.196     -0.058      0.954      -0.395       0.372
+ret_close_close     0.0075      0.057      0.133      0.894      -0.103       0.118
+rv_intraday        -0.8713      9.736     -0.090      0.929     -19.953      18.210
+rv_overnight        3.3032      6.479      0.510      0.610      -9.395      16.002
+is_fomc             0.0018      0.003      0.623      0.533      -0.004       0.007
+is_cpi              0.0030      0.010      0.309      0.757      -0.016       0.022
+==============================================================================
+Omnibus:                        8.837   Durbin-Watson:                   2.131
+Prob(Omnibus):                  0.012   Jarque-Bera (JB):               15.757
+Skew:                           0.154   Prob(JB):                     0.000379
+Kurtosis:                       4.355   Cond. No.                     1.03e+04
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity and autocorrelation robust (HAC) using 5 lags and without small sample correction
+[2] The condition number is large, 1.03e+04. This might indicate that there are
+strong multicollinearity or other numerical problems.

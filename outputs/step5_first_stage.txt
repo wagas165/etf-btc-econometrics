@@ -1,0 +1,30 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:           FlowShock_t1   R-squared:                       0.379
+Model:                            OLS   Adj. R-squared:                  0.356
+Method:                 Least Squares   F-statistic:                     21.36
+Date:                Wed, 03 Dec 2025   Prob (F-statistic):           6.99e-13
+Time:                        07:04:21   Log-Likelihood:                 437.10
+No. Observations:                 109   AIC:                            -864.2
+Df Residuals:                     104   BIC:                            -850.7
+Df Model:                           4                                         
+Covariance Type:                  HAC                                         
+===================================================================================
+                      coef    std err          z      P>|z|      [0.025      0.975]
+-----------------------------------------------------------------------------------
+const               0.0020      0.001      1.764      0.078      -0.000       0.004
+Turnover            0.1019      0.026      3.980      0.000       0.052       0.152
+ret_close_close     0.0908      0.021      4.408      0.000       0.050       0.131
+rv_intraday         2.1958      4.452      0.493      0.622      -6.531      10.922
+rv_overnight       -9.9109      3.354     -2.955      0.003     -16.484      -3.337
+==============================================================================
+Omnibus:                       20.866   Durbin-Watson:                   1.595
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               28.972
+Skew:                           0.945   Prob(JB):                     5.11e-07
+Kurtosis:                       4.676   Cond. No.                     1.16e+04
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity and autocorrelation robust (HAC) using 5 lags and without small sample correction
+[2] The condition number is large, 1.16e+04. This might indicate that there are
+strong multicollinearity or other numerical problems.
