@@ -24,6 +24,52 @@ def load_macro_sources(files: Iterable[Path]) -> list[pd.DataFrame]:
     return frames
 
 
+def _default_calendar() -> pd.DataFrame:
+    """Return a lightweight default macro calendar.
+
+    If users do not supply their own CSVs under ``data/raw/macro``, we still
+    want downstream merges to have meaningful macro markers. The defaults are
+    built from the publicly available 2024 FOMC meeting dates and CPI release
+    days published by the Federal Reserve and BLS.
+    """
+
+    fomc_dates = pd.to_datetime(
+        [
+            "2024-01-31",
+            "2024-03-20",
+            "2024-05-01",
+            "2024-06-12",
+            "2024-07-31",
+            "2024-09-18",
+            "2024-11-07",
+            "2024-12-18",
+        ]
+    )
+
+    cpi_dates = pd.to_datetime(
+        [
+            "2024-01-11",
+            "2024-02-13",
+            "2024-03-12",
+            "2024-04-10",
+            "2024-05-15",
+            "2024-06-12",
+            "2024-07-11",
+            "2024-08-14",
+            "2024-09-11",
+            "2024-10-10",
+            "2024-11-13",
+            "2024-12-11",
+        ]
+    )
+
+    default_dates = pd.Index(fomc_dates).union(pd.Index(cpi_dates))
+    default = pd.DataFrame({"date": default_dates})
+    default["is_fomc"] = default["date"].isin(fomc_dates).astype(int)
+    default["is_cpi"] = default["date"].isin(cpi_dates).astype(int)
+    return default
+
+
 def main() -> None:
     raw_macro_dir = RAW_DIR / "macro"
     out_path = CLEAN_DIR / "macro_events.csv"
@@ -35,8 +81,7 @@ def main() -> None:
     if frames:
         macro = pd.concat(frames, ignore_index=True)
     else:
-        # Provide an empty scaffold so downstream merges do not fail
-        macro = pd.DataFrame(columns=DEFAULT_COLUMNS)
+        macro = _default_calendar()
 
     if "date" not in macro.columns:
         macro["date"] = pd.NaT

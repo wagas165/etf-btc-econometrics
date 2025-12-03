@@ -7,8 +7,9 @@ from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
+import yfinance as yf
 
-from config.config import CLEAN_DIR, RAW_DIR, US_BTC_ETFS
+from config.config import CLEAN_DIR, ETF_END_DATE, ETF_START_DATE, RAW_DIR, US_BTC_ETFS
 
 
 NAV_FILENAME_TEMPLATE = "nav_{ticker}.csv"
@@ -43,19 +44,49 @@ def iter_nav_files(tickers: Iterable[str]):
             print(f"NAV file missing for {tkr}: {fpath}")
 
 
+def fetch_nav_from_yfinance(ticker: str) -> pd.DataFrame:
+    """Fallback NAV estimate using Yahoo! Finance closes.
+
+    Issuers often lag publishing NAV files. To keep the pipeline usable, we
+    fall back to Yahoo! Finance daily closes as a proxy for NAV per share. This
+    at least restores downstream ``premium`` calculations even if issuer CSVs
+    are not available.
+    """
+
+    hist = yf.Ticker(ticker).history(start=ETF_START_DATE, end=ETF_END_DATE, auto_adjust=False)
+    if hist.empty:
+        raise ValueError(f"No NAV proxy data returned for {ticker} from yfinance")
+
+    hist = hist.reset_index().rename(columns={"Date": "date", "Close": "nav_per_share"})
+    hist["ticker"] = ticker
+    return hist[["date", "ticker", "nav_per_share"]]
+
+
 def main() -> None:
     out_path = CLEAN_DIR / "etf_nav_panel.csv"
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    frames = []
-    for ticker, path in iter_nav_files(US_BTC_ETFS):
-        try:
-            frames.append(load_single_nav_file(path, ticker))
-        except Exception as exc:  # noqa: BLE001
-            print(f"Skipping {ticker} NAV ({path}): {exc}")
+    frames: list[pd.DataFrame] = []
 
+    for ticker in US_BTC_ETFS:
+        issuer_path = RAW_DIR / "etf_nav" / NAV_FILENAME_TEMPLATE.format(ticker=ticker)
+        if issuer_path.exists():
+            try:
+                frames.append(load_single_nav_file(issuer_path, ticker))
+                print(f"Loaded issuer NAV for {ticker} from {issuer_path}")
+                continue
+            except Exception as exc:  # noqa: BLE001
+                print(f"Skipping issuer NAV for {ticker} ({issuer_path}): {exc}")
+
+        try:
+            frames.append(fetch_nav_from_yfinance(ticker))
+            print(f"Fetched NAV proxy for {ticker} from yfinance")
+        except Exception as exc:  # noqa: BLE001
+            print(f"Failed to fetch NAV proxy for {ticker}: {exc}")
+
+    frames = [f for f in frames if not f.empty]
     if not frames:
-        print("No NAV files found. Place issuer CSVs under data/raw/etf_nav if available.")
+        print("No NAV data available from issuers or yfinance proxies.")
         return
 
     nav_panel = pd.concat(frames, ignore_index=True)
