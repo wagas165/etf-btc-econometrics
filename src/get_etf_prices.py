@@ -19,11 +19,13 @@ def fetch_etf_price(ticker: str) -> pd.DataFrame:
     if hist.empty:
         raise ValueError(f"No price data returned for {ticker}")
 
+    shares_full = yf_ticker.get_shares_full(start=ETF_START_DATE, end=ETF_END_DATE)
     shares_outstanding = yf_ticker.fast_info.get("shares")
     if shares_outstanding is None or pd.isna(shares_outstanding):
         # ``get_info`` is slower but sometimes contains the shares field for new ETFs
         info = yf_ticker.get_info()
         shares_outstanding = info.get("sharesOutstanding") or info.get("impliedSharesOutstanding")
+
     hist = hist.reset_index().rename(
         columns={
             "Date": "date",
@@ -32,10 +34,17 @@ def fetch_etf_price(ticker: str) -> pd.DataFrame:
         }
     )
     hist["ticker"] = ticker
-    hist["shares_outstanding"] = shares_outstanding
-    hist["aum_usd"] = (
-        hist["close_price"] * shares_outstanding if pd.notna(shares_outstanding) else pd.NA
-    )
+
+    if shares_full is not None and not shares_full.empty:
+        shares_full = shares_full.reset_index().rename(columns={"Date": "date", "Shares": "shares_outstanding"})
+        hist = hist.merge(shares_full, on="date", how="left")
+
+    if "shares_outstanding" not in hist.columns:
+        hist["shares_outstanding"] = shares_outstanding
+    else:
+        hist["shares_outstanding"] = hist["shares_outstanding"].fillna(shares_outstanding)
+
+    hist["aum_usd"] = hist["close_price"] * hist["shares_outstanding"]
     return hist[["date", "ticker", "close_price", "volume_shares", "shares_outstanding", "aum_usd"]]
 
 

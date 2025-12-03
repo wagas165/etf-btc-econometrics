@@ -99,6 +99,33 @@ def save_irf(irf_df: pd.DataFrame, base_name: str, title: str) -> None:
     plt.close()
 
 
+def standardize_columns(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    out = df.copy()
+    for col in cols:
+        if col not in out.columns:
+            continue
+        std = out[col].std(ddof=0)
+        if std and not np.isclose(std, 0):
+            out[col] = (out[col] - out[col].mean()) / std
+    return out
+
+
+def orthogonalize_instruments(design: pd.DataFrame, instruments: list[str], controls: list[str]) -> pd.DataFrame:
+    """Residualize instruments on controls to temper multicollinearity."""
+
+    controls_present = [c for c in controls if c in design.columns]
+    if not controls_present:
+        return design
+
+    ctrl = sm.add_constant(design[controls_present], has_constant="add")
+    for inst in instruments:
+        if inst not in design.columns:
+            continue
+        fit = sm.OLS(design[inst], ctrl).fit()
+        design[inst] = fit.resid
+    return design
+
+
 # ---------- Step 3 ----------
 def step3_eda(df: pd.DataFrame) -> None:
     d = df.dropna(subset=["FlowShock_frac", "btc_close_et"]).copy().reset_index(drop=True)
@@ -298,7 +325,12 @@ def first_stage(df: pd.DataFrame, instruments: list[str], lags: int) -> sm.regre
     tmp = df.copy().sort_values("date").reset_index(drop=True)
     tmp["FlowShock_t1"] = tmp["FlowShock_frac"].shift(-1)
     sample = tmp.dropna(subset=["FlowShock_t1"] + instruments + CONTROLS_IV).copy()
-    X = sm.add_constant(sample[instruments + CONTROLS_IV])
+
+    design = sample[instruments + CONTROLS_IV].copy()
+    design = standardize_columns(design, design.columns.tolist())
+    design = orthogonalize_instruments(design, instruments, CONTROLS_IV)
+
+    X = sm.add_constant(design[instruments + CONTROLS_IV])
     y = sample["FlowShock_t1"]
     return sm.OLS(y, X).fit(cov_type="HAC", cov_kwds={"maxlags": lags})
 
@@ -316,9 +348,13 @@ def lp_iv(df: pd.DataFrame, instruments: list[str], win_col: str, h: int, lags: 
     tmp["y"] = tmp[win_col].shift(-(1 + h))
     sample = tmp.dropna(subset=["y", "FlowShock_t1"] + instruments + CONTROLS_IV).copy()
 
+    design = sample[instruments + CONTROLS_IV].copy()
+    design = standardize_columns(design, design.columns.tolist())
+    design = orthogonalize_instruments(design, instruments, CONTROLS_IV)
+
     y = sample["y"].values
-    X = sm.add_constant(sample[["FlowShock_t1"] + CONTROLS_IV], has_constant="add")
-    Z = sm.add_constant(sample[instruments + CONTROLS_IV], has_constant="add")
+    X = sm.add_constant(pd.concat([sample[["FlowShock_t1"]], design[CONTROLS_IV]], axis=1), has_constant="add")
+    Z = sm.add_constant(pd.concat([design[instruments], design[CONTROLS_IV]], axis=1), has_constant="add")
 
     res, se = fit_iv2sls_hac(y, X, Z, nlags=lags)
     beta = float(res.params[1])

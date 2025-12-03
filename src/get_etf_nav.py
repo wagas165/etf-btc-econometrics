@@ -58,7 +58,10 @@ def fetch_nav_from_yfinance(ticker: str) -> pd.DataFrame:
     if hist.empty:
         raise ValueError(f"No NAV proxy data returned for {ticker} from yfinance")
 
-    hist = hist.reset_index().rename(columns={"Date": "date", "Close": "nav_per_share"})
+    # Use adjusted closes as a proxy for NAV so market price ``Close`` retains
+    # independent variation when computing premiums.
+    nav_col = "Adj Close" if "Adj Close" in hist.columns else "Close"
+    hist = hist.reset_index().rename(columns={"Date": "date", nav_col: "nav_per_share"})
     hist["ticker"] = ticker
     hist["nav_source"] = "yfinance_proxy"
     return hist[["date", "ticker", "nav_per_share", "nav_source"]]

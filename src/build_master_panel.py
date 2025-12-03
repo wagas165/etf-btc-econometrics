@@ -35,10 +35,12 @@ def main() -> None:
     agg = (
         daily_funds.groupby("date").agg(
             flow_agg_usd_mn=("net_flow_usd", "sum"),
-            aum_total=("aum_usd", "sum") if "aum_usd" in daily_funds.columns else ("net_flow_usd", "sum"),
-            dollar_volume_total=("dollar_volume", "sum"),
+            aum_total=("aum_usd", lambda s: s.sum(min_count=1)),
+            dollar_volume_total=("dollar_volume", lambda s: s.sum(min_count=1)),
         )
     ).reset_index()
+
+    agg["aum_total"] = agg["aum_total"].ffill()
 
     # Flows are reported in millions of USD; scale to raw dollars for ratios
     agg["flow_agg_usd"] = agg["flow_agg_usd_mn"] * 1_000_000
