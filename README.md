@@ -12,25 +12,25 @@ Lightweight pipeline to download Bitcoin ETF flows, prices, NAVs, BTC intraday d
    export SOSOVALUE_URL="https://example.com/api"
    ```
 
-## Pipeline steps
-Run the scripts in this order after placing issuer NAV CSVs under `data/raw/etf_nav/`:
+## Pipeline
+Run everything from a single entry point:
 
 ```bash
-./run_pipeline.sh
+python src/run_analysis.py
 ```
 
-Or run each step manually:
+This orchestrates data collection, feature engineering, and the econometric study. Use `--data-only` to skip the analysis or `--analysis-only` to rerun charts/regressions after data updates.
 
-1. `python src/get_etf_flows.py`
-2. `python src/get_etf_prices.py`
-3. `python src/get_etf_nav.py`
-4. `python src/build_etf_panel.py`
-5. `python src/get_btc_1m_binance.py`
-6. `python src/build_btc_windows.py`
-7. `python src/build_macro.py`
-8. `python src/build_master_panel.py`
+### What happens
 
-Outputs are written under `data/clean/` and are ready for analysis/notebooks.
+| Stage | Description | Entrypoint | Key outputs |
+| --- | --- | --- | --- |
+| Download ETF data | Pulls flows, prices, and NAV inputs for listed U.S. BTC ETFs. | `src/get_etf_flows.py`, `src/get_etf_prices.py`, `src/get_etf_nav.py` | Raw HTML/JSON caches under `data/raw/etf_flows/` plus harmonized flows and pricing panels in `data/clean/` | 
+| Build BTC windows | Downloads Binance 1-minute klines and aggregates them into intraday/overnight windows. | `src/get_btc_1m_binance.py`, `src/build_btc_windows.py` | BTC feature windows in `data/clean/btc_windows_*.csv` |
+| Construct macro & master panel | Flags macro announcement dates, merges all data into `data/clean/master_panel.csv`, and keeps intermediate ETF panels. | `src/build_macro.py`, `src/build_master_panel.py` | Final analysis dataset under `data/clean/master_panel.csv` |
+| Run econometric analysis | Generates descriptive plots, impulse responses, and robustness checks. | `run_steps_3_6.py` (called by `src/run_analysis.py`) | Charts, CSVs, and reports in `outputs/` with stage-prefixed filenames |
+
+If you prefer a Bash wrapper, use `./run_data_pipeline.sh` to refresh data only via the same Python entrypoint.
 
 ## Troubleshooting downloads
 
