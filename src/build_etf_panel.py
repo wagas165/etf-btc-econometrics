@@ -75,7 +75,31 @@ def main() -> None:
         baseline = panel.groupby("ticker")["shares_outstanding"].transform(
             lambda s: s.dropna().iloc[0] if s.notna().any() else 0
         )
-        panel["shares_outstanding_est"] = panel["shares_outstanding"].fillna(baseline + flow_cum)
+
+        # Offset the cumulative flow so the first observed shares point anchors
+        # the creation/redemption total, avoiding double-counting earlier flows.
+        first_share_flow = panel.groupby("ticker").apply(
+            lambda g: flow_cum.loc[g.index[g["shares_outstanding"].notna()][0]]
+            if g["shares_outstanding"].notna().any()
+            else 0
+        )
+        flow_cum_offset = panel["ticker"].map(first_share_flow)
+
+        first_share_date = panel.groupby("ticker").apply(
+            lambda g: g.loc[g["shares_outstanding"].notna(), "date"].iloc[0]
+            if g["shares_outstanding"].notna().any()
+            else pd.NaT
+        )
+        first_share_date_map = panel["ticker"].map(first_share_date)
+
+        flow_cum_adj = flow_cum - flow_cum_offset
+        flow_cum_adj = flow_cum_adj.where(
+            panel["date"].ge(first_share_date_map) | first_share_date_map.isna(), 0
+        )
+
+        panel["shares_outstanding_est"] = panel["shares_outstanding"].fillna(
+            baseline + flow_cum_adj
+        )
 
     if "shares_outstanding_est" in panel.columns:
         panel["shares_outstanding"] = panel["shares_outstanding"].fillna(panel["shares_outstanding_est"])
