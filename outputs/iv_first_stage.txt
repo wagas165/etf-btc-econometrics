@@ -1,30 +1,29 @@
                             OLS Regression Results                            
 ==============================================================================
-Dep. Variable:           FlowShock_t1   R-squared:                       0.379
-Model:                            OLS   Adj. R-squared:                  0.356
-Method:                 Least Squares   F-statistic:                     21.36
-Date:                Wed, 03 Dec 2025   Prob (F-statistic):           6.99e-13
-Time:                        07:04:21   Log-Likelihood:                 437.10
-No. Observations:                 109   AIC:                            -864.2
-Df Residuals:                     104   BIC:                            -850.7
-Df Model:                           4                                         
+Dep. Variable:           FlowShock_t1   R-squared:                       0.417
+Model:                            OLS   Adj. R-squared:                  0.411
+Method:                 Least Squares   F-statistic:                     6.366
+Date:                Sat, 06 Dec 2025   Prob (F-statistic):           9.87e-06
+Time:                        21:22:40   Log-Likelihood:                -5445.7
+No. Observations:                 470   AIC:                         1.090e+04
+Df Residuals:                     464   BIC:                         1.093e+04
+Df Model:                           5                                         
 Covariance Type:                  HAC                                         
 ===================================================================================
                       coef    std err          z      P>|z|      [0.025      0.975]
 -----------------------------------------------------------------------------------
-const               0.0020      0.001      1.764      0.078      -0.000       0.004
-Turnover            0.1019      0.026      3.980      0.000       0.052       0.152
-ret_close_close     0.0908      0.021      4.408      0.000       0.050       0.131
-rv_intraday         2.1958      4.452      0.493      0.622      -6.531      10.922
-rv_overnight       -9.9109      3.354     -2.955      0.003     -16.484      -3.337
+const            9438.3593   1710.640      5.517      0.000    6085.567    1.28e+04
+Turnover         2.261e+04   8503.102      2.658      0.008    5939.521    3.93e+04
+Premium_agg      2674.3086   2333.039      1.146      0.252   -1898.363    7246.981
+ret_close_close    88.6329   1079.893      0.082      0.935   -2027.918    2205.184
+rv_intraday      2225.8855    751.325      2.963      0.003     753.315    3698.456
+rv_overnight     -264.3773   1452.088     -0.182      0.856   -3110.418    2581.663
 ==============================================================================
-Omnibus:                       20.866   Durbin-Watson:                   1.595
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):               28.972
-Skew:                           0.945   Prob(JB):                     5.11e-07
-Kurtosis:                       4.676   Cond. No.                     1.16e+04
+Omnibus:                      552.165   Durbin-Watson:                   1.632
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):           130823.150
+Skew:                           4.980   Prob(JB):                         0.00
+Kurtosis:                      84.124   Cond. No.                         2.18
 ==============================================================================
 
 Notes:
 [1] Standard Errors are heteroscedasticity and autocorrelation robust (HAC) using 5 lags and without small sample correction
-[2] The condition number is large, 1.16e+04. This might indicate that there are
-strong multicollinearity or other numerical problems.

@@ -1,0 +1,12 @@
+{
+  "variants": [
+    "base",
+    "exclude_macro",
+    "bull",
+    "bear",
+    "pre_t1",
+    "post_t1",
+    "year_2024",
+    "year_2025"
+  ]
+}

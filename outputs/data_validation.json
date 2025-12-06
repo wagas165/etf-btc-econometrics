@@ -3,17 +3,18 @@
   "date_min": "2024-01-11",
   "date_max": "2025-12-02",
   "duplicate_dates": false,
-  "rows_finite_flowshock_turnover": 199,
-  "premium_unique_nonmissing": 1,
+  "rows_finite_flowshock_turnover": 472,
+  "premium_unique_nonmissing": 473,
   "missing_by_col": {
     "date": 0,
-    "flow_agg_usd": 0,
+    "flow_agg_usd_mn": 0,
     "aum_total": 0,
     "dollar_volume_total": 0,
+    "flow_agg_usd": 0,
     "aum_total_lag": 1,
-    "FlowShock": 274,
-    "Turnover": 274,
-    "Premium_agg": 273,
+    "FlowShock": 1,
+    "Turnover": 1,
+    "Premium_agg": 0,
     "btc_open_intraday": 2,
     "btc_close_intraday": 2,
     "btc_close_et": 2,
@@ -25,6 +26,6 @@
     "rv_overnight": 2,
     "is_fomc": 0,
     "is_cpi": 0,
-    "FlowShock_frac": 274
+    "FlowShock_frac": 1
   }
 }
